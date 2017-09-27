@@ -1,0 +1,728 @@
+% //////////////////// Preambolo /////////////////
+
+% Definizione del documento
+\documentclass[12pt,a4paper,oneside,hidelinks]{report}
+
+% Lingue usate nel documento e dizionario di correzione
+\usepackage[english,italian]{babel}
+
+%Codifica dei font di input e di output
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+% Gestisce comandi interlinea, spazio tra caratteri
+\usepackage{setspace}
+
+% Grafica
+\usepackage{graphicx}
+
+% Migliore indentazione del testo
+\usepackage{indentfirst}
+
+% Gestisce i caption delle immagini
+\usepackage{caption}
+
+% Formule matematiche
+\usepackage{amssymb, amsmath, amsthm}
+
+% Gestisce il codice
+\usepackage{listings}
+
+% Gestisce i link
+\usepackage{hyperref}
+
+% Formattazione pagina
+\usepackage{geometry}
+
+% Colori
+\usepackage{xcolor}
+
+% Pacchetti usati per scrivere lo pseudocodice di un algoritmo
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+%Rimuove la parola "Algorithm #" dallo pseudocodice
+\captionsetup[algorithm]{labelformat=empty}
+
+% Gestione delle multirighe in una tabella
+\usepackage{multirow}
+
+% Allineamento dei numeri in una tabella
+\usepackage{siunitx}
+
+% Gestione delle tabelle su più pagine
+\usepackage{subcaption}
+
+% //////////////////////////////////////////////////
+
+% Impostare interlinea a 1.5
+\renewcommand{\baselinestretch}{1.5}
+
+% Dichiara la funzione argmin
+\DeclareMathOperator*{\argmin}{argmin} 
+
+% Apertura del pdf con il 100% di zoom
+\hypersetup{pdfstartview={XYZ null null 1.00}}
+
+% Impostare i margini della pagina
+\geometry{left=2cm,right=2cm, top=2cm, bottom=2cm}
+
+%Impostare font del documento (Latin Modern Roman)
+\renewcommand*\rmdefault{lmr}
+
+
+% //////////////////// DOCUMENTO /////////////////
+
+\begin{document}
+
+% //////////////////// Titolo /////////////////
+
+%Titolo e intestazione
+\title{% 
+  Progetto di Algoritmi Euristici \\
+  K-means e K-means++}
+  
+\author{Michele Valsesia}
+
+\date{Anno accademico 2017/2018} 
+
+\maketitle
+
+% //////////////////// Capitoli /////////////////
+
+
+\section*{Introduzione}
+Il processo di clustering suddivide un insieme di entità, generalmente corrispondenti a punti di uno spazio metrico, in gruppi omogenei e ben separati. Un gruppo è omogeneo se è costituito da entità con caratteristiche simili tra loro ed è ben separato quando le sue entità non sono contenute in altri gruppi. I gruppi sono chiamati \textit{cluster} ed il risultato della suddivisione identifica una \textit{partizione} dello spazio delle entità.
+
+Definito uno spazio Euclideo $\rm I\!R^d$, un vettore $X = {[x_1, \dotsc ,x_N]}$ con $x_i \in \rm I\!R^d$ ed un sottoinsieme $C$ di $X$, si vuole trovare una partizione $P_K = {C_1, \dotsc ,C_k}$ di $X$ composta da $K$ cluster tale per cui:
+
+\begin{itemize}
+\item $C_k \neq \emptyset$; $k = 1,2, \dotsc ,K$
+\item $C_i \cap C_j = \emptyset$; $i,j = 1,2, \dotsc ,K$; $i \neq j$ 
+\item $\displaystyle\bigcup_{k=1}^{K} C_k$ $ = X$
+\end{itemize}
+
+La partizione di una serie di punti di uno spazio Euclideo viene calcolata per mezzo del metodo della \textit{Minima Somma di Quadrati (MSCC)}. Questo metodo soddisfa simultaneamente sia la condizione di omogeneità che quella di non separabilità descritte dal processo di clustering. \\ 
+Ogni cluster è identificato da un punto $c_i$, chiamato \textit{centroide}, che rappresenta il baricentro dei punti ad esso associati.
+Per ogni punto viene calcolato il quadrato della distanza euclidea rispetto a tutti i centroidi presenti. Un punto è infatti assegnato al cluster alla quale corrisponde la distanza minima. \\
+L'obiettivo principale della Minima Somma di Quadrati consiste nell'individuare la partizione che minimizza la somma delle distanze euclidee al quadrato tra un punto ed il suo relativo centroide. \\
+Da un punto di vista matematico, dato un insieme $X = [x_1, \dotsc ,x_i, \dots ,x_N]$ con $x = [x_{1i}, \dots ,x_{di}]$ di $N$ punti in uno spazio Euclideo $\rm I\!R^d$, si vuole partizionare $X$ in $K$ sottoinsiemi disgiunti $C_j$, tali per cui la somma del quadrato delle distanze euclidee di ciascun punto $x_i$ da un centroide $c_j$, associato ad un cluster $C_j$, sia minima.
+Sia $P_k$ l'insieme di tutte le partizioni di $X$ in $K$ gruppi e sia la partizione $P$ definita come $P = {C_1, \dotsc ,C_k}$, allora la funzione obiettivo che individua la migliore partizione di $X$ è definita come:
+
+\begin{equation}\label{zero}
+	f_{MSSC}(P) = \min_{p \in P_k} \sum_{i=1}^{N} \min_{j =1, \dotsc ,K} (\| x_i - c_j \|_2)^2
+\end{equation} 
+
+La distanza euclidea al quadrato viene usata per evitare il calcolo della radice quadrata, costosa computazionalmente, e non danneggia la struttura generale del problema, in quanto viene considerata solo per operazioni di confronto. Infatti: 
+
+\begin{equation}\label{uno}
+	(\| x_i - c_{j1} \|_2)^2 \geq  (\| x_i - c_{j2} \|_2)^2 \Leftrightarrow  (\| x_i - c_{j1} \|_2) \geq  (\| x_i - c_{j2} \|_2)
+\end{equation} 
+
+\paragraph*{}
+Il valore di un centroide $c_j$ è ottenuto dalla media aritmetica dei punti del cluster.
+
+\begin{equation}\label{due}
+	c_j = \frac{1}{| C_J |}\sum_{i \in C_j} x_i
+\end{equation}
+
+\subsection*{K-means}
+L'euristica che implementa il metodo della Somma dei Minimi Quadrati è conosciuta come \textit{K-means}. La soluzione di partenza dell'algoritmo viene generata estraendo uniformemente un numero $K$ di centroidi casuali dagli $N$ punti dell'istanza $X$ ed assegnando i restanti punti al cluster che minimizza il quadrato della distanza euclidea tra il centroide ed il punto stesso. 
+La procedura che consente di trovare una partizione dello spazio Euclideo si compone principalmente di tre fasi:
+
+\begin{itemize}
+\item L'uso dell'equazione \ref{due} per calcolare i valori dei nuovi centroidi 
+\item Il ricalcolo del quadrato della distanza euclidea, per ogni punto, rispetto a tutti i centroidi
+\item L'assegnamento di ciascun punto al cluster che minimizza la distanza euclidea al quadrato
+\end{itemize}
+
+Il processo sopradescritto termina o quando non avviene più nessun riassegnamento o quando viene superata una soglia massima di ripetibilità stabilita a priori. Nello pseudocodice sottostante, $m(x_i)$ è la funzione di \textit{membership} che associa un punto $x_i$ al cluster corrispondente.
+
+\begin{algorithm}
+\caption{\textbf{K-means}}
+\begin{algorithmic}[1]
+\Function{KM}{$X,K,Maxit$}
+\State Scegliere i centroidi iniziali $c_k = (k = 1, \dotsc ,K)$
+\item[]
+\For{$i:= 1, \dotsc ,N$}
+	\State $m(x_i)\gets \argmin_{j =1, \dotsc ,K} (\| x_i - c_j \|_2)^2$
+\EndFor
+\item[]
+\State $l\gets 0$
+\While{\textit{m varia $\&\&$ l < Maxit}}
+	\State $l\gets l + 1$
+	\item[]
+	\For{$j:= 1, \dotsc ,K$}
+		\State \textit{Calcola i centroidi $c_j$}
+	\EndFor
+	\item[]
+	\For{$i:= 1, \dotsc ,N$}
+		\State $m(x_i)\gets \argmin_{j =1, \dotsc ,K} (\| x_i - c_j \|_2)^2$
+	\EndFor
+\EndWhile
+\EndFunction
+\end{algorithmic}
+\end{algorithm} 
+
+Da un punto di vista pratico, il K-means viene utilizzato per raggruppare in classi gli oggetti presenti in un'immagine. Le classi sono costituite da elementi con caratteristiche simili tra loro, come ad esempio la forma, il colore e la posizione delle varie entità considerate.
+Partizionare un'immagine aiuta ad eliminare dati superflui, consentendo una riduzione del filesize, e ad estrarre le feature fondamentali per il confronto tra immagini.
+Il K-means è anche un algoritmo di apprendimento non supervisionato che viene applicato in diversi ambiti del machine learning.
+
+\subsection*{K-means++}
+Il \textit{K-means++} è stato creato per ridurre la dipendenza che si presenta tra la soluzione finale e i $K$ centroidi casuali scelti inizialmente. Differisce dal K-means classico solo per il diverso modo di generare la soluzione di partenza.
+Il primo centroide viene scelto con probabilità uniforme tra gli $N$ punti dell'istanza, mentre i restanti $K - 1$ vengono estratti da una distribuzione di probabilità pesata. Il peso di ciascuno dei punti corrisponde alla minima distanza euclidea al quadrato tra il punto ed i centroidi correntemente individuati. 
+
+\subsection*{VNS}
+La Variable Neighbourhood Search (VNS) è una metaeuristica di scambio usata per migliorare una soluzione prodotta da un'euristica di scambio. È basata su 
+una gerarchia di intorni ad ampiezza crescente costruiti a partire da una sequenza di $k$ operazioni, tratte da un insieme $O$ di operazioni elementari.
+Stabilita una dimensione minima $k_{min}$ dell'intorno, la VNS estrae in maniera casuale, dall'intorno corrente, la soluzione iniziale ed applica la stessa euristica di scambio usata per produrre la soluzione che si vuole migliorare. \\
+La nuova funzione obiettivo viene confrontata con quella trovata precedentemente e se è minore, la dimensione dell'intorno viene riportata a $k_{min}$, la nuova funzione obiettivo viene salvata e la soluzione trovata diventa quella ottima. Nel caso in cui il valore della funzione obiettivo fosse maggiore, la dimensione dell'intorno viene aumentata di un determinato valore $\delta_k$. \\
+Il processo descritto sopra viene iterato fino a quando non si raggiunge la massima dimensione dell'intorno, stabilita a priori dal parametro $k_{max}$, oppure non viene superato un certo tempo di esecuzione. \\
+La metaeuristica si chiama Variable Neighbourhood perché l'intorno considerato varia a seconda dei risultati ottenuti dall'euristica di scambio:
+
+\begin{itemize}
+\item Se la soluzione migliora, la VNS riparte dall'intorno di minima dimensione. Viene così applicata la cosiddetta procedura di intensificazione.
+\item Se la soluzione non migliora, la VNS aumenta la dimensione dell'intorno. Viene così applicata la cosiddetta procedura di diversificazione.
+\end{itemize}
+
+Il metodo fa uso di tre parametri:
+
+\begin{itemize}
+\item $k_{min}$ è la minima dimensione dell'intorno e viene generalmente posto a 1 
+\item $k_{max}$ è la massima dimensione dell'intorno e deve essere sufficientemente alto da garantire soluzioni molto diverse fra loro
+\item $\delta_k$ è la variazione del parametro $k$ tra due intorni consecutivi ed è generalmente posto a 1
+\end{itemize}
+
+Nello pseudocodice sottostante, la funzione \textit{$SteepestDescent(x^{(0)})$} è l'euristica di scambio, mentre \textit{$ExtractNeighbour(x^*, k)$} è la procedura che estrae a caso una soluzione iniziale dall'intorno corrente.
+
+\begin{algorithm}
+\caption{\textbf{Variable Neighbourhood Search}}
+\begin{algorithmic}[1]
+\Function{VNS}{$X,x^{(0)}$}
+\State $x\gets SteepestDescent(x^{(0)})$
+\State $x^*\gets x$
+\State $k\gets k_{min}$
+\item[]
+\For{$i:= 1, \dotsc ,\ell$}
+	\State $x'\gets ExtractNeighbour(x^*, k)$
+	\State $x'\gets SteepestDescent(x')$
+	\item[]
+	\If{$f(x') < f(x^*)$}
+		\State $x^*\gets x'$
+		\State $k\gets k_{min}$
+	\Else
+		\State $k\gets k + \delta_k$
+	\EndIf 
+	\item[]
+	\If{$k > k_{max}$}
+		\State $k\gets k_{max}$
+	\EndIf 
+\EndFor
+\item[]
+\State \textbf{return} $(x^*, f(x^*))$\;
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+\section*{Scelte Implementative}
+Il K-means implementato partiziona uno spazio Euclideo bidimensionale. I parametri forniti in input dall'utente sono 7:
+
+\begin{itemize}
+\item Il nome del file contenente gli $N$ punti (entità) che l'algoritmo deve partizionare
+\item Il numero $K$ di cluster richiesti 
+\item Il numero massimo di iterazioni \textit{Maxit} usate dal K-means
+\item La dimensione massima dell'intorno $k_{max}$ usata dalla VNS
+\item Il tempo di esecuzione $t$ della VNS
+\item Il seed da usare per generare i numeri casuali
+\end{itemize}
+
+Prima di eseguire il K-means, il processo verifica che i parametri inseriti siano corretti. Ad eccezione del nome del file contenente i punti da partizionare, che deve essere una stringa, i restanti parametri sono numeri interi. \\
+Per evitare di avere un numero $K$ di cluster pari o superiore al numero di punti dell'istanza, $K$ deve essere sempre inferiore a $N$. \\
+La dimensione massima dell'intorno $k_{max}$ è sempre inferiore o uguale a $K$, altrimenti la VNS creerebbe delle soluzioni casuali con un numero di centroidi superiori a $K$. \\
+Il parametro di seed è l'unico che può assumere un valore negativo in modo da specificare all'algoritmo l'uso di un seme non fissato. \\
+L'utente non può inserire parametri ulteriori a quelli richiesti.
+Se anche solo una delle condizioni sopradescritte non viene rispettata, il processo termina restituendo un errore.
+
+\paragraph*{}
+Il progetto è stato realizzato con una politica di lavoro che mira a ridurre il tempo di calcolo a sfavore del numero delle strutture dati. 
+Ad esempio, per il calcolo delle distanze tra un punto $x_i$ ed un centroide $k$, viene usato un array di double, invece per la funzione di membership $m(x_i)$ un array di interi.
+
+Alla prima iterazione, la funzione obiettivo ed i centroidi vengono calcolati in tempo lineare, ma a partire dalle iterazioni successive vengono calcolati in tempo costante.
+Questi aggiornamenti si verificano quando un punto $x_k$ viene assegnato ad un altro cluster.
+Dato un centroide $c_j$ associato al cluster $C_j$ di cardinalità $n_j$ ed un centroide $c_i$ associato al cluster $C_i$ di cardinalità $n_i$, il nuovo valore dei centroidi è determinato dalle seguenti formule:
+
+\begin{align}
+  c_j\gets \dfrac{n_jc_j - x_k}{n_j - 1} && c_i\gets \dfrac{n_ic_i + x_k}{n_i + 1}  
+\end{align}
+
+Per aggiornare la funzione obiettivo si sottrae la distanza tra $x_k$ ed il vecchio centroide e si aggiunge quella relativa al nuovo centroide.
+
+\begin{equation}
+	f_{MSSC} = [f_{MSSC} - \min_{old =1, \dotsc ,K} (\| x_k - c_{old} \|_2)^2] + \min_{new =1, \dotsc ,K} (\| x_k - c_{new} \|_2)^2 
+\end{equation} 
+ 
+La generazione della soluzione casuale, descritta dalla VNS, viene implementata con il meccanismo di \textit{Shaking}, che consiste nel sostituire $k$ centroidi della soluzione corrente con punti dell'istanza estratti in maniera casuale.
+
+\begin{algorithm}
+\caption{\textbf{Meccanismo di Shaking}}
+\begin{algorithmic}[1]
+\Function{Shaking}{$X,C,k$}
+\State $j\gets 0$
+\item[]
+\While{$j < k $}
+	\State $r\gets rand()$
+	\State $r1\gets \lfloor (K - j + 1) * r \rfloor$
+	\State $r2\gets \lfloor (N - j + 1) * r \rfloor$
+	\item[]
+	\State $c(r1)\gets x(r2)$
+	\item[]
+	\State $j\gets j + 1$
+\EndWhile
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+La soluzione finale viene salvata in un file \textit{EPS}. Il formato EPS permette di rappresentare graficamente le varie partizioni ed i relativi centroidi.
+Ad ogni cluster è associato un colore diverso ed i centroidi sono identificati da rombi di colore nero.
+
+\section*{Complessità nel caso pessimo}
+Per ognuno degli algoritmi, si analizza la corrispettiva complessità nel caso pessimo.
+
+La valutazione tiene conto solo delle operazioni più costose temporalmente ed è composta da due fasi. Nella prima fase si analizza la complessità dell'euristica di scambio, mentre nella seconda quella della metauristica. 
+
+\subsection*{K-means e K-means++}
+Estrarre i centroidi casuali della soluzione di partenza del K-means richiede $K$ passi.
+Il K-means++, per ciascuno dei $K-1$ centroidi iniziali, scorre gli $N$ punti dell'istanza e calcola i relativi pesi della funzione di probabilità associata.
+Il calcolo della funzione obiettivo e della media, alla prima iterazione, ha un costo pari a $N$.
+Per ognuno degli $N$ punti vengono calcolate le $K$ distanze euclidee al quadrato. L'intero procedimento viene eseguito per un massimo numero di iterazioni pari a $Maxit$ e quindi il costo complessivo totale del K-means e del K-means++ nel caso pessimo è $\mathcal{O}(Maxit N K)$.
+
+\subsection*{VNS}
+L'operazione di shaking richiede un numero di passi pari alla massima dimensione dell'intorno $k_{max}$.
+L'euristica di base viene ripetuta per $k_{max}$ volte e per un certo tempo $t$ stabilito a priori dall'utente.
+Nel caso pessimo, il tempo massimo della metauristica è $\mathcal{O}(t k_{max} N K Maxit)$.
+
+\subsection*{Considerazioni finali}
+Generalmente il tempo di esecuzione $t$ ha un valore trascurabile rispetto a quello degli altri parametri, perciò non influenza notevolmente la complessità. Il valore $k_{max}$ non può superare il numero di cluster $K$, tuttavia l'algoritmo implementato prevede che $K$ possa assumere il valore $N - 1$. 
+In sintesi, fissato $K = N - 1$, la complessità massima ottenibile per mezzo di questo algoritmo è $\mathcal{O}(N^3)$.
+
+\section*{Analisi dei Risultati}
+\textbf{\textit{Computer}}. Tutti i test sono stati effettuati su un terminale con processore Intel(R) Xeon(R) CPU E5-1620 da 3.1 GHz e 16GB di RAM.
+
+\paragraph*{}
+\textbf{\textit{Istanze}}. Per questo progetto si sono utilizzate 10 istanze di TSP relative al Drilling Problem e contenute nel dataset \textit{TSPLIB}. Le istanze sono costituite da un numero $I$ crescente di punti bidimensionali compreso tra un minimo di 198 ed un massimo di 3795.
+
+\paragraph*{}
+\textbf{\textit{Test}}. Ogni test fornisce in output un file testuale contenente le funzioni obiettivo trovate dal K-means e dal K-means++ per ogni istanza, a partire da parametri di input fissati.
+
+\paragraph*{}
+\textbf{\textit{Parametri}}. Il numero di centroidi $K$ è fissato a 10, mentre il parametro $t$ viene fissato a 30 secondi per consentire all'algoritmo di avere un ampio margine di tempo per poter produrre i risultati. I numeri casuali vengono generati con un valore di seed pari a 1, in questo modo si garantisce la riproducibilità dei test siccome le soluzioni trovate sono le stesse per ogni esecuzione successiva.
+I parametri soggetti a variazione sono il massimo numero di iterazioni \textit{Maxit}, del K-means e del K-means++, e la massima grandezza dell'intorno $k_{max}$ della VNS.
+
+Per valutare la differente qualità dei risultati prodotti dagli algoritmi sulle istanze di input, si è optato di far assumere al parametro $k_{max}$, che rappresenta la massima grandezza dell'intorno della VNS, i valori 5, 8 e 10. Questa scelta è stata fatta per evitare di avere delle soluzioni troppo dipendenti dal meccanismo di intensificazione e di diversificazione degli algoritmi.
+Per ognuno dei valori di $k_{max}$, vengono fatte tre prove con \textit{Maxit} pari a 10, 30 e 50 e lasciando i restanti parametri invariati. Si è scelto di usare un modesto numero di iterazioni \textit{Maxit}, per evitare di aumentare in maniera esagerata la complessità computazionale. 
+
+\paragraph*{}
+\textbf{\textit{Test di Wilcoxon}}. Per individuare l'algoritmo che forinisce il miglior partizionamento dello spazio bidimensionale di partenza, le funzioni obiettivo dei test, calcolate da ciascuno degli algoritmi a partire dalle stesse istanze di input, vengono fornite in ingresso ad uno script Perl che esegue il test di Wilcoxon. Il test di Wilcoxon è un analisi statistica che confronta quantitativamente due algoritmi e decreta quale è il migliore.
+
+\paragraph*{}
+\textbf{\textit{Risultati Ottenuti}}.
+
+\topskip0pt
+\vspace*{\fill}
+
+% Prima Tabella
+
+\begin{table}[ht]%	
+	\centering
+	\caption{Funzioni obiettivo con $k_{max} = 5$}\label{tab:b1}
+
+	\def\arraystretch{1.4}
+
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\
+			
+			\hline		
+		
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27921277.326987  & 1493.25 \\
+			657  &  66525223.475457  & 66525223.475457  & 0 \\
+			724  &  52143135.658591  & 52143134.854769  & 0.803822 \\
+			1655 &  141861655.971517 & 141861656.100074 & 0.128557 \\
+			1817 &  132745376.497139 & 132745375.957834 & 0.539305  \\
+			2152 &	158791141.767284 & 158791141.771142 & 0.003858 \\
+			2319 &  959657247.952909 & 959657282.003293 & 34.0504 \\
+			3038 &  560251191.281980 & 560251191.725052 & 0.443072 \\
+			3795 &  106393708.697129 & 106393708.697129 & 0 \\
+	
+			\hline
+		\end{tabular}	
+			
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 10}
+	\end{subtable}%
+	
+	\vspace*{1.9 cm}
+	
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\
+			
+			\hline		
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27887451.730710  & 35318.8 \\
+			657  &  66525223.475457  & 66525223.475457  & 0\\
+			724  &  52143134.854769  & 52143135.835309  & 0.98054\\
+			1655 &  141861655.971517 & 141861655.971518 & 1.01328e-06 \\
+			1817 &  132745376.207258 & 132745375.976270 & 0.230988 \\
+			2152 &	158791144.163191 & 158791144.989080 & 0.825889 \\
+			2319 &  959628248.694286 & 959653175.730093 & 24927 \\
+			3038 &  560251192.259474 & 560251192.159630 & 0.0998441 \\
+			3795 &  106393708.697129 & 106393708.697129 & 0 \\
+			
+			\hline
+		\end{tabular}
+		
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 30}
+	\end{subtable}%
+\end{table}
+
+\vspace*{\fill}
+
+\clearpage
+
+\topskip0pt
+\vspace*{\fill}
+
+\begin{table}[h]\ContinuedFloat %
+	\centering
+	\def\arraystretch{1.4}	
+	
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\	
+			
+			\hline		
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27887451.730710  & 35318.8 \\
+			657  &  66525223.475457  & 66525223.475457  & 0 \\
+			724  &  52143136.206421  & 52143135.835309  & 0.371112\\
+			1655 &  141861655.971517 & 141861656.591375 & 0.619858 \\
+			1817 &  132745375.957834 & 132745375.976270 & 0.018436 \\
+			2152 &	158791141.973905 & 158791144.989080 & 3.01518 \\
+			2319 &  959604437.287821 & 959650144.102812 & 45706.8 \\
+			3038 &  560251194.955438 & 560251192.247621 & 2.70782 \\
+			3795 &  106393708.697129 & 106393708.697129 & 0 \\
+			
+			\hline
+		\end{tabular}
+		\vspace*{0.2 cm}
+		\caption{\textit{Maxit} = 50}
+	\end{subtable}%	
+\end{table}
+
+\vspace*{1.9 cm}
+
+% Seconda Tabella
+
+\begin{table}[h]%
+	\centering
+	\caption{Funzioni obiettivo con $k_{max} = 8$}\label{tab:b2}
+
+	\def\arraystretch{1.4}
+
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\			
+			
+			\hline		
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27921277.326987  & 1493.25 \\
+			657  &  66526822.704837  & 66525223.746162  & 1598.96 \\
+			724  &  52143135.590922  & 52143134.854769  & 0.736153 \\
+			1655 &  141861655.971517 & 141861655.971517 & 0 \\
+			1817 &  132745376.644507 & 132745376.342709 & 0.301798 \\
+			2152 &	158791141.801942 & 158791141.767284 & 0.034658 \\
+			2319 &  959618043.302090 & 959657274.615160 & 39231.3 \\
+			3038 &  560251191.512914 & 560251191.802791 & 0.289877 \\
+			3795 &  106393708.697129 & 106393708.697129 & 0 \\
+			
+			\hline
+		\end{tabular}	
+			
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 10}
+	\end{subtable}%	
+\end{table}
+
+\vspace*{\fill}
+
+\clearpage
+
+\topskip0pt
+\vspace*{\fill}
+
+\begin{table}[h]\ContinuedFloat%
+	\centering
+	
+	\def\arraystretch{1.4}
+
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\			
+			
+			\hline		
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27922770.580162  & 0 \\
+			657  &  66525223.667243  & 66526822.416213  & 1598.75\\
+			724  &  52143135.590922  & 52143134.854769  & 0.736153 \\
+			1655 &  141861655.971517 & 141861655.971517 & 0 \\
+			1817 &  132745384.513000 & 132745376.885252 & 7.62775 \\
+			2152 &	158791143.153830 & 158791141.777732 & 1.3761 \\
+			2319 &  959654421.529881 & 959644195.465368 & 10226.1 \\
+			3038 &  560251222.054362 & 560251196.431925 & 25.6224 \\
+			3795 &  106393708.697129 & 106393708.744303 & 0.047174 \\			
+			
+			\hline
+		\end{tabular}
+		
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 30}
+	\end{subtable}%
+	
+	\vspace*{1.9 cm}
+	
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\			
+			
+			\hline			
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27922770.580162  & 0 \\
+			657  &  66525223.667243  & 66526822.416213  & 0.142696 \\
+			724  &  52143135.590922  & 52143134.854769  & 1.22085 \\
+			1655 &  141861655.971517 & 141861655.971517 & 0 \\
+			1817 &  132745384.513000 & 132745376.885252 & 0.471023 \\
+			2152 &	158791143.153830 & 158791141.777732 & 92.0981 \\
+			2319 &  959654421.529881 & 959644195.465368 & 21109.3 \\
+			3038 &  560251222.054362 & 560251196.431925 & 12.9153 \\
+			3795 &  106393708.697129 & 106393708.744303 & 0 \\			
+			
+			\hline
+		\end{tabular}
+		
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 50}
+	\end{subtable}%
+\end{table}
+
+\vspace*{\fill}
+
+\topskip0pt
+\vspace*{\fill}
+
+% Terza Tabella
+
+\begin{table}[ht]%
+	\centering
+	\caption{Funzioni obiettivo con $k_{max} = 10$}\label{tab:b3}
+
+	\def\arraystretch{1.4}
+
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\			
+			
+			\hline	
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27922770.580162  & 27922770.580162  & 0 \\
+			657  &  66525225.850837  & 66525223.475457  & 2.37538 \\
+			724  &  52143134.985571  & 52143134.854769  & 0.130802 \\
+			1655 &  141861655.971517 & 141861655.971517 & 0 \\
+			1817 &  132745376.199681 & 132745375.976271 & 0.22341 \\
+			2152 &	158791145.275574 & 158791141.708503 & 3.56707 \\
+			2319 &  959653165.670748 & 959660997.631989 & 7831.96 \\
+			3038 &  560251194.214985 & 560251192.043423 & 2.17156 \\
+			3795 &  106393708.697129 & 106393708.697129 & 0 \\
+			
+			\hline
+		\end{tabular}	
+			
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 10}
+	\end{subtable}%	
+	
+	\vspace*{1.9 cm}
+	
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\			
+			
+			\hline	
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27945424.730378  & 27922770.580162  & 22654.2 \\
+			657  &  66526822.416213  & 66526822.690530  & 0.274317 \\
+			724  &  52143135.603037  & 52143135.590922  & 0.012115\\
+			1655 &  141861655.971517 & 141861655.971517 & 0 \\
+			1817 &  132745376.626625 & 132745375.960405 & 0.66622 \\
+			2152 &	158791145.709625 & 158791142.055673 & 3.65395 \\
+			2319 &  959628211.472722 & 959605188.058435 & 23023.4 \\
+			3038 &  560251276.537833 & 560251191.433878 & 85.104 \\
+			3795 &  106393708.697129 & 106393708.697129 & 0 \\			
+			
+			\hline
+		\end{tabular}
+		
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 30}
+	\end{subtable}%
+\end{table}
+
+\vspace*{\fill}
+
+\clearpage
+
+\begin{table}[h]\ContinuedFloat%%
+	\centering
+	
+	\def\arraystretch{1.4}
+	
+	\begin{subtable}{\textwidth}
+		\centering
+		\begin{tabular}{|S[table-parse-only = true]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-format = 9.6, table-number-alignment = center]
+						|S[table-parse-only = true]|}
+			
+			\hline			
+			{$i$} & {$f_{k}^*$} & {$f_{k++}^*$} & {$|f_{k}^* - f_{k++}^*|$} \\			
+			
+			\hline	
+			
+			198  &  3083342.539589   & 3083342.539589   & 0  \\
+			493  &  27945424.730378  & 27922770.580162  & 22654.2  \\
+			657  &  66526822.416213  & 66526822.690530  & 0.274317 \\
+			724  &  52143134.985571  & 52143135.590922  & 0.605351\\
+			1655 &  141861655.971517 & 141863743.904387 & 2087.93 \\
+			1817 &  132745376.497139 & 132745375.960405 & 0.536734 \\
+			2152 &	158791144.071038 & 158791156.336263 & 12.2652 \\
+			2319 &  959607354.009766 & 959605188.058435 & 2165.95 \\
+			3038 &  560251193.302626 & 560251194.485887 & 1.18326 \\
+			3795 &  106393708.764099 & 106393708.697129 & 0.06697 \\			
+			
+			\hline
+		\end{tabular}
+		
+		\vspace*{0.4 cm}
+		\caption{\textit{Maxit} = 50}
+	\end{subtable}%
+\end{table}
+
+% Wilcoxon
+\begin{table}[h]%
+	\centering
+	\caption{Test di Wilcoxon}\label{tab:b4}	
+
+	\begin{tabular}{|c|c|c|c|c|c|}
+			\hline
+
+			% Intestazione
+			$k_{max}$ & \textit{Maxit} & \textit{N} & $W^+$ & 
+			$W^-$ & \textit{Vincitore} \\
+			
+			\hline		
+
+			\multirow{3}{*}{5} 
+			& 10 & 7 & 16 & 12 & K-means++ \\
+			& 30 & 7 & 12 & 16 & K-means \\
+			& 50 & 7 & 12 & 16 & K-means \\
+			
+			\hline
+			
+			\multirow{3}{*}{8} 
+			& 10 & 7 & 19 & 9 & K-means++ \\
+			& 30 & 7 & 21 & 7 & K-means++ \\
+			& 50 & 6 & 20 & 1 & K-means++ \\
+			
+			\hline
+			
+			\multirow{3}{*}{10} 
+			& 10 & 6 & 15 & 6 & K-means++ \\
+			& 30 & 7 & 26 & 2 & K-means++ \\
+			& 50 & 9 & 21 & 24 & K-means \\					
+
+			\hline 
+	\end{tabular}	
+\end{table}
+
+\paragraph*{}
+%Tabella~\ref{tab:b1}
+\textbf{\textit{Analisi dei risultati}}. Come si evince dai dati osservati, le funzioni obiettivo prodotte dai due algoritmi sono molto simili tra loro e le principali variazioni si hanno su istanze di media dimensione. 
+
+La funzione obiettivo dell'istanza più piccola è uguale in tutti i test, per ognuno degli algoritmi, e questo fa presuppore che il valore trovato sia un ottimo globale. Per quanto riguarda l'istanza di taglia massima, la variazione riscontrata tra un test e un altro è minima e questo fa presupporre che l'algoritmo abbia trovato un buon ottimo locale.
+
+Il test di Wilcoxon mostra che per un valore basso di $k_{max}$, il K-means è l'algoritmo che ottiene un risultato migliore all'aumentare del numero di iterazioni. Sapendo che valori piccoli dell'intorno comportano una soluzione molto simile alla precedente, il K-means risulta particolarmente adatto quando si vuole intensificare. All'aumentare della massima dimensione dell'intorno, il K-means++ produce risultati migliori, risultando più idoneo per la diversificazione.
+
+In base alle osservazioni effettuate, usare il K-means++ con un valore di $k_{max}$ pari a 8 e \textit{Maxit} pari a 30, consente di trovare delle buone soluzioni in termini di tempo e costo computazionale.
+
+\section*{Conclusioni}    
+I due algoritmi consentono di ottenere una buona partizione dello spazio bidimensionale di partenza. A seconda delle diverse configurazioni dei parametri di input si ottengono diversi tipi di soluzioni, mantenendo una complessità computazionale relativamente bassa.
+
+% Terminazione del documento
+\end{document} 
